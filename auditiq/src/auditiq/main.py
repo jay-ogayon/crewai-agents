@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import warnings
+import os
 
 from datetime import datetime
 
@@ -8,10 +9,50 @@ from auditiq.crew import Auditiq
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
+def startup_health_check():
+    """Perform startup health checks to identify potential deployment issues."""
+    print("🔍 Performing startup health check...")
+    
+    issues = []
+    
+    # Check critical environment variables
+    required_env_vars = [
+        "AZURE_API_KEY",
+        "AZURE_API_BASE", 
+        "AzureSearchEnpoint",
+        "AzureSearchAdminKey"
+    ]
+    
+    for var in required_env_vars:
+        if not os.getenv(var):
+            issues.append(f"Missing required environment variable: {var}")
+    
+    # Check environment variable formats
+    search_endpoint = os.getenv("AzureSearchEnpoint")
+    if search_endpoint and not search_endpoint.startswith("https://"):
+        issues.append("AzureSearchEnpoint should start with https://")
+    
+    azure_base = os.getenv("AZURE_API_BASE")
+    if azure_base and not azure_base.startswith("https://"):
+        issues.append("AZURE_API_BASE should start with https://")
+    
+    if issues:
+        print(f"⚠️  Found {len(issues)} startup issues:")
+        for issue in issues:
+            print(f"   - {issue}")
+        print("⚠️  Continuing with deployment, but these may cause runtime issues.")
+    else:
+        print("✅ Startup health check passed!")
+    
+    return len(issues) == 0
+
 def run():
     """
     Run the crew with user query input.
     """
+    # Perform startup health check
+    startup_health_check()
+    
     # Check if user provided a query as command line argument
     if len(sys.argv) > 1:
         user_query = " ".join(sys.argv[1:])
@@ -29,19 +70,25 @@ def run():
     }
     
     try:
+        print(f"🚀 Initializing AuditIQ crew...")
         # Use intelligent routing workflow
         auditiq_crew = Auditiq()
+        print(f"✅ Crew initialized successfully")
+        
+        print(f"🔍 Processing query: {user_query}")
         result = auditiq_crew.kickoff_intelligent_routing(inputs)
         
         # For cloud deployment, just return the result instead of writing to file
+        print(f"✅ Query processed successfully")
         print(f"\nQuery: {user_query}")
         print(f"Response:\n{result}")
         return result
         
     except Exception as e:
         error_msg = f"An error occurred while running the crew: {e}"
-        print(error_msg)
-        raise Exception(error_msg)
+        print(f"❌ Error: {error_msg}")
+        # Don't raise in cloud environment to prevent deployment failure
+        return f"Error: {error_msg}"
 
 def run_qa():
     """

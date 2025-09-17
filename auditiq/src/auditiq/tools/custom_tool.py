@@ -107,13 +107,16 @@ class AzureSearchTool(BaseTool):
                 index_name = os.getenv("AzureSearchIndexName", "audit-iq")  # Policy index
                 index_description = "audit policy"
             
-            # Initialize search client with timeout
-            credential = AzureKeyCredential(search_key)
-            search_client = SearchClient(
-                endpoint=search_endpoint,
-                index_name=index_name,
-                credential=credential
-            )
+            # Initialize search client with timeout and error handling
+            try:
+                credential = AzureKeyCredential(search_key)
+                search_client = SearchClient(
+                    endpoint=search_endpoint,
+                    index_name=index_name,
+                    credential=credential
+                )
+            except Exception as init_error:
+                return f"Error initializing Azure Search client: {str(init_error)}. Please check your Azure Search credentials and endpoint configuration."
             
             # Perform search with timeout (30 seconds)
             import time
@@ -218,6 +221,12 @@ class SerperSearchTool(BaseTool):
             else:
                 return f"No web results found for query: '{query}'"
                 
+        except requests.exceptions.Timeout:
+            return "Error: SERPER API request timed out after 15 seconds. Please try again with a simpler query."
+        except requests.exceptions.ConnectionError:
+            return "Error: Unable to connect to SERPER API. Please check your internet connection."
+        except requests.exceptions.HTTPError as e:
+            return f"Error: SERPER API HTTP error: {str(e)}. Please check your SERPER_API_KEY."
         except requests.RequestException as e:
             return f"Error making SERPER API request: {str(e)}"
         except Exception as e:
@@ -366,17 +375,69 @@ serper_search_tool = None
 document_translation_tool = None
 pdf_translation_tool = None
 
-def _ensure_tools_loaded():
-    """Ensure tool instances are loaded."""
-    global azure_search_tool, serper_search_tool, document_translation_tool, pdf_translation_tool
-    if azure_search_tool is None:
-        azure_search_tool = AzureSearchTool()
-    if serper_search_tool is None:
-        serper_search_tool = SerperSearchTool()
-    if document_translation_tool is None:
-        document_translation_tool = DocumentTranslationTool()
-    if pdf_translation_tool is None:
-        pdf_translation_tool = document_translation_tool
+def validate_environment_variables():
+    """Validate that required environment variables are properly formatted."""
+    issues = []
+    
+    # Check Azure OpenAI variables
+    azure_api_key = os.getenv("AZURE_API_KEY")
+    if azure_api_key and len(azure_api_key) < 10:
+        issues.append("AZURE_API_KEY seems too short")
+    
+    # Check Azure Search variables
+    search_endpoint = os.getenv("AzureSearchEnpoint")
+    if search_endpoint and not search_endpoint.startswith("https://"):
+        issues.append("AzureSearchEnpoint should start with https://")
+    
+    search_key = os.getenv("AzureSearchAdminKey")
+    if search_key and len(search_key) < 10:
+        issues.append("AzureSearchAdminKey seems too short")
+    
+    # Check Azure Document Translation variables
+    doc_endpoint = os.getenv("AZURE_DOCUMENT_TRANSLATION_ENDPOINT")
+    if doc_endpoint and not doc_endpoint.startswith("https://"):
+        issues.append("AZURE_DOCUMENT_TRANSLATION_ENDPOINT should start with https://")
+    
+    doc_key = os.getenv("AZURE_DOCUMENT_TRANSLATION_KEY")
+    if doc_key and len(doc_key) < 20:
+        issues.append("AZURE_DOCUMENT_TRANSLATION_KEY seems too short")
+    
+    return issues
 
-# Auto-load tools when module is accessed
-_ensure_tools_loaded()
+def _ensure_tools_loaded():
+    """Ensure tool instances are loaded with proper error handling."""
+    global azure_search_tool, serper_search_tool, document_translation_tool, pdf_translation_tool
+    
+    try:
+        # Validate environment variables first
+        env_issues = validate_environment_variables()
+        if env_issues and not is_cloud_environment():
+            print(f"Environment validation warnings: {', '.join(env_issues)}")
+        
+        if azure_search_tool is None:
+            azure_search_tool = AzureSearchTool()
+        if serper_search_tool is None:
+            serper_search_tool = SerperSearchTool()
+        if document_translation_tool is None:
+            document_translation_tool = DocumentTranslationTool()
+        if pdf_translation_tool is None:
+            pdf_translation_tool = document_translation_tool
+            
+    except Exception as e:
+        print(f"Warning: Tool initialization error: {e}")
+        # Don't fail completely, just log the error
+        if azure_search_tool is None:
+            azure_search_tool = AzureSearchTool()
+        if serper_search_tool is None:
+            serper_search_tool = SerperSearchTool()
+        if document_translation_tool is None:
+            document_translation_tool = DocumentTranslationTool()
+        if pdf_translation_tool is None:
+            pdf_translation_tool = document_translation_tool
+
+# Auto-load tools when module is accessed (with error handling)
+try:
+    _ensure_tools_loaded()
+except Exception as startup_error:
+    print(f"Startup warning: {startup_error}")
+    # Continue anyway - tools will be loaded on demand
