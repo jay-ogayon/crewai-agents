@@ -5,7 +5,7 @@ Welcome to **AuditIQ**, an advanced multi-agent AI audit system powered by [crew
 ## 🌟 Features
 
 - **🤖 Intelligent Query Routing**: Automatically routes queries to the most appropriate specialized agent
-- **📚 RAG-Powered Search**: Search internal audit documents using Azure Cognitive Search
+- **📚 Dual-Index RAG Search**: Intelligent search across specialized indexes - audit policies vs. methodologies - using Azure Cognitive Search
 - **🌐 Live Web Research**: Real-time research on current audit regulations and industry trends
 - **📄 PDF Translation**: Translate audit documents between languages while preserving formatting
 - **⚡ Multi-Agent Collaboration**: Specialized agents working together for comprehensive audit intelligence
@@ -14,7 +14,7 @@ Welcome to **AuditIQ**, an advanced multi-agent AI audit system powered by [crew
 
 ### Three Specialized Agents:
 
-1. **🔍 RAG Agent**: Searches internal audit knowledge base using Azure Search
+1. **🔍 RAG Agent**: Searches internal audit knowledge base using dual Azure Search indexes (policies vs. methodologies)
 2. **🌐 Audit Researcher**: Conducts web research using SERPER API for current information
 3. **📄 PDF Translator**: Translates documents between languages using Azure Document Translation
 
@@ -56,10 +56,11 @@ AZURE_API_KEY=your_azure_openai_key
 AZURE_API_BASE=https://your-openai-resource.openai.azure.com/
 AZURE_API_VERSION=2025-01-01-preview
 
-# Azure Search Configuration (RAG Agent)
+# Azure Search Configuration (RAG Agent - Dual Index System)
 AzureSearchEnpoint=https://your-search-service.search.windows.net
 AzureSearchAdminKey=your_search_key
-AzureSearchIndexName=audit-iq
+AzureSearchIndexName=audit-iq  # For audit policies, regulations, compliance
+AzureSearchIndexName2=echo     # For audit methodologies, procedures, techniques
 
 # SERPER API Configuration (Research Agent)
 SERPER_API_KEY=your_serper_api_key
@@ -83,15 +84,34 @@ uv run auditiq
 
 ## 🧪 Testing Different Agents
 
-### 🔍 RAG Agent (Q&A) - Internal Knowledge Base
-Test with questions about internal policies and procedures:
+### 🔍 RAG Agent (Q&A) - Internal Knowledge Base with Dual Index System
+The system automatically selects between two specialized indexes based on query content:
+
+#### 📋 Policy Index (audit-iq) - Audit Policies & Compliance
+Test with questions about audit policies, regulations, and compliance:
 
 ```bash
-# Test Q&A Agent
-echo "What are our internal audit policies?" | uv run auditiq
-echo "Show me the procedure for conducting risk assessments" | uv run auditiq
-echo "What compliance requirements do we have for data privacy?" | uv run auditiq
+# Test Policy Index (AzureSearchIndexName = audit-iq)
+echo "What are the audit policies for financial reporting?" | crewai run
+echo "What are compliance requirements for SOX?" | crewai run
+echo "What are the regulatory requirements for auditing?" | crewai run
+echo "What governance standards apply to audit committees?" | crewai run
 ```
+
+#### 🔧 Methodology Index (echo) - Audit Procedures & Techniques
+Test with questions about audit methodologies, procedures, and techniques:
+
+```bash
+# Test Methodology Index (AzureSearchIndexName2 = echo)
+echo "What methods should I follow for testing internal controls?" | crewai run
+echo "How to implement audit sampling methodology?" | crewai run
+echo "What procedures should I follow for risk assessment?" | crewai run
+echo "What are the standard procedures for audit evidence collection?" | crewai run
+```
+
+**Expected Output**: Look for confirmation messages like:
+- `"Searched audit policy index (audit-iq) and found X results"` for policy queries
+- `"Searched methodology index (echo) and found X results"` for methodology queries
 
 ### 🌐 Audit Researcher Agent (RESEARCH) - Web Search
 Test with questions requiring current external information:
@@ -113,14 +133,36 @@ echo "Translate my Docx file /Users/ferdinanda/Desktop/AuditIQ/auditiq/Documents
 echo "Convert Documents/AB8782.pdf to French while preserving formatting" | uv run auditiq
 ```
 
+## 🎯 Dual Index System
+
+The RAG Agent intelligently routes queries to specialized indexes based on content analysis:
+
+### 📋 **Policy Queries → audit-iq Index**
+Keywords: `policy`, `regulation`, `compliance`, `requirement`, `governance`, `standard`, `mandate`
+
+Examples:
+- "What are the audit policies for financial reporting?"
+- "What are compliance requirements for SOX?"
+- "What governance standards apply to audit committees?"
+- "What are the regulatory requirements for auditing?"
+
+### 🔧 **Methodology Queries → echo Index** 
+Keywords: `methodology`, `procedure`, `technique`, `how to`, `steps`, `methods for`, `standard procedures`
+
+Examples:
+- "What methods should I follow for testing internal controls?"
+- "How to implement audit sampling methodology?"
+- "What procedures should I follow for risk assessment?"
+- "What are the standard procedures for audit evidence collection?"
+
 ## 📝 Sample Questions by Agent Type
 
-### 📚 **Q&A Questions (Routes to RAG Agent)**
-- "What are our company's audit policies for financial reporting?"
-- "Explain our risk assessment procedures"
-- "What documentation is required for expense audits?"
-- "Find information about our internal control frameworks"
-- "What are the audit findings from last quarter's review?"
+### 📚 **Q&A Questions (Routes to RAG Agent with Smart Index Selection)**
+- "What are our company's audit policies for financial reporting?" *(→ Policy Index)*
+- "Explain our risk assessment procedures" *(→ Methodology Index)*
+- "What documentation is required for expense audits?" *(→ Policy Index)*
+- "Find information about our internal control frameworks" *(→ Policy Index)*
+- "What are the audit findings from last quarter's review?" *(→ Policy Index)*
 
 ### 🔬 **Research Questions (Routes to Audit Researcher)**
 - "What are the latest PCAOB audit standards for 2024?"

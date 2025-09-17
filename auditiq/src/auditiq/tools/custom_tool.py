@@ -19,20 +19,66 @@ class AzureSearchTool(BaseTool):
     name: str = "azure_search_tool"
     description: str = (
         "Search the internal audit knowledge base using Azure Cognitive Search. "
+        "Automatically selects the appropriate index based on query content: "
+        "- Audit policy queries use the main audit-iq index "
+        "- Methodology queries use the methodology-specific index "
         "Use this tool to find relevant audit documents, policies, procedures, "
-        "historical findings, and compliance documentation from the audit-iq index."
+        "historical findings, and compliance documentation."
     )
     args_schema: Type[BaseModel] = AzureSearchInput
+
+    def _classify_query(self, query: str) -> str:
+        """
+        Classify the query to determine which index to use.
+        Returns 'policy' for audit policy queries, 'methodology' for methodology queries.
+        """
+        query_lower = query.lower()
+        
+        # Keywords that indicate methodology queries
+        methodology_keywords = [
+            'methodology', 'method', 'approach', 'technique', 'procedure', 'process',
+            'how to', 'steps', 'workflow', 'framework', 'best practice', 'guideline',
+            'implementation', 'execution', 'practice', 'standard operating', 'sop',
+            'performing', 'conducting', 'execute', 'carry out', 'technique for',
+            'standard procedures', 'procedures for', 'methods for'
+        ]
+        
+        # Keywords that indicate policy queries
+        policy_keywords = [
+            'policy', 'policies', 'regulation', 'rule', 'requirement', 'compliance',
+            'standard', 'mandate', 'directive', 'governance', 'audit rule',
+            'regulatory', 'legal', 'obligation', 'requirements for'
+        ]
+        
+        # Count matches for each category
+        methodology_score = sum(1 for keyword in methodology_keywords if keyword in query_lower)
+        policy_score = sum(1 for keyword in policy_keywords if keyword in query_lower)
+        
+        # Return the category with higher score, default to policy if tied
+        if methodology_score > policy_score:
+            return 'methodology'
+        else:
+            return 'policy'
 
     def _run(self, query: str, top: int = 5) -> str:
         try:
             # Get Azure Search configuration from environment using correct variable names
             search_endpoint = os.getenv("AzureSearchEnpoint")  # Note: keeping original spelling from user
             search_key = os.getenv("AzureSearchAdminKey")
-            index_name = os.getenv("AzureSearchIndexName", "audit-iq")  # Default to audit-iq if not set
             
             if not search_endpoint or not search_key:
                 return "Error: Azure Search credentials not configured. Please check AzureSearchEnpoint and AzureSearchAdminKey in environment variables."
+            
+            # Classify the query to determine which index to use
+            query_type = self._classify_query(query)
+            
+            # Select appropriate index based on query classification
+            if query_type == 'methodology':
+                index_name = os.getenv("AzureSearchIndexName2", "echo")  # Methodology index
+                index_description = "methodology"
+            else:
+                index_name = os.getenv("AzureSearchIndexName", "audit-iq")  # Policy index
+                index_description = "audit policy"
             
             # Initialize search client
             credential = AzureKeyCredential(search_key)
@@ -61,9 +107,10 @@ class AzureSearchTool(BaseTool):
                 formatted_results.append(f"**Title:** {title}\n**Score:** {score}\n**Content:** {content}...\n")
             
             if formatted_results:
-                return f"Found {len(formatted_results)} results for query '{query}':\n\n" + "\n---\n".join(formatted_results)
+                header = f"Searched {index_description} index ({index_name}) and found {len(formatted_results)} results for query '{query}':\n\n"
+                return header + "\n---\n".join(formatted_results)
             else:
-                return f"No results found for query: '{query}'"
+                return f"No results found in {index_description} index ({index_name}) for query: '{query}'"
                 
         except Exception as e:
             return f"Error searching Azure index: {str(e)}"

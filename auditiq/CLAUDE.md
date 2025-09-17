@@ -28,12 +28,14 @@ Required environment variables in `.env`:
 - `AZURE_API_VERSION` - Azure OpenAI API version
 - `AzureSearchEnpoint` - Azure Search service endpoint (for RAG Agent)
 - `AzureSearchAdminKey` - Azure Search API key (for RAG Agent)
-- `AzureSearchIndexName` - Azure Search index name (defaults to 'audit-iq')
+- `AzureSearchIndexName` - Azure Search index name for audit policies (defaults to 'audit-iq')
+- `AzureSearchIndexName2` - Azure Search index name for methodologies (defaults to 'echo')
 - `SERPER_API_KEY` - SERPER API key for web search (for Audit Researcher Agent)
 - `AZURE_DOCUMENT_TRANSLATION_ENDPOINT` - Azure Document Translation service endpoint (for PDF Translator Agent)
 - `AZURE_DOCUMENT_TRANSLATION_KEY` - Azure Document Translation API key (for PDF Translator Agent)
 - Ensure Python >=3.10,<3.14 is installed
 - Run `crewai install` or `uv sync` to install dependencies
+
 
 ## Architecture
 
@@ -109,9 +111,12 @@ The system uses intelligent query routing to determine the appropriate workflow:
 ### Integration Details
 
 #### Azure Search Integration (RAG Agent)
-- **Index**: Configurable via `AzureSearchIndexName` (defaults to `audit-iq`)
+- **Dual Index System**: Automatically selects the appropriate index based on query content
+  - **Policy Index**: Configurable via `AzureSearchIndexName` (defaults to `audit-iq`) - for audit policies, regulations, compliance requirements
+  - **Methodology Index**: Configurable via `AzureSearchIndexName2` (defaults to `echo`) - for audit methodologies, procedures, techniques
+- **Query Classification**: Intelligent routing based on keywords like "methodology", "policy", "procedure", etc.
 - **Search Type**: Semantic search with AI-powered relevance
-- **Content**: Internal audit documents, policies, procedures
+- **Content**: Internal audit documents, policies, procedures, methodologies
 - **Authentication**: Azure Search key-based authentication via `AzureSearchAdminKey`
 - **Endpoint**: Configured via `AzureSearchEnpoint`
 
