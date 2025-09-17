@@ -8,8 +8,8 @@ from auditiq.tools.custom_tool import azure_search_tool, serper_search_tool, doc
 class Auditiq():
     """AuditIQ intelligent audit crew with RAG and research capabilities"""
 
-    agents: List[BaseAgent]
-    tasks: List[Task]
+    agents_config = 'config/agents.yaml'
+    tasks_config = 'config/tasks.yaml'
 
     @agent
     def query_router(self) -> Agent:

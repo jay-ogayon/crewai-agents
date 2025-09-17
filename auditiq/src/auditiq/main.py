@@ -16,8 +16,8 @@ def run():
     if len(sys.argv) > 1:
         user_query = " ".join(sys.argv[1:])
     else:
-        # Interactive mode - prompt user for query
-        user_query = input("Enter your audit query: ")
+        # For cloud deployment, use a default query if none provided
+        user_query = "What are the audit policies for financial reporting?"
     
     if not user_query.strip():
         print("Error: No query provided.")
@@ -33,18 +33,15 @@ def run():
         auditiq_crew = Auditiq()
         result = auditiq_crew.kickoff_intelligent_routing(inputs)
         
-        # Write result to file for consistency with original behavior
-        with open('audit_response.md', 'w') as f:
-            f.write(f"# Audit Intelligence Response\n\n")
-            f.write(f"**Query:** {user_query}\n\n")
-            f.write(f"**Response:**\n{result}\n")
-            f.write(f"\n---\n*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")
-        
-        print(f"\nResponse saved to audit_response.md")
-        print(f"\nResponse:\n{result}")
+        # For cloud deployment, just return the result instead of writing to file
+        print(f"\nQuery: {user_query}")
+        print(f"Response:\n{result}")
+        return result
         
     except Exception as e:
-        raise Exception(f"An error occurred while running the crew: {e}")
+        error_msg = f"An error occurred while running the crew: {e}"
+        print(error_msg)
+        raise Exception(error_msg)
 
 def run_qa():
     """
@@ -53,7 +50,7 @@ def run_qa():
     if len(sys.argv) > 1:
         user_query = " ".join(sys.argv[1:])
     else:
-        user_query = input("Enter your audit query (Q&A mode): ")
+        user_query = "What are the audit policies for financial reporting?"
     
     if not user_query.strip():
         print("Error: No query provided.")
@@ -69,17 +66,14 @@ def run_qa():
         qa_crew = auditiq_crew.create_dynamic_crew("QA")
         result = qa_crew.kickoff(inputs=inputs)
         
-        with open('audit_qa_response.md', 'w') as f:
-            f.write(f"# Q&A Response (Internal Knowledge Base)\n\n")
-            f.write(f"**Query:** {user_query}\n\n")
-            f.write(f"**Response:**\n{result}\n")
-            f.write(f"\n---\n*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")
-        
-        print(f"\nQ&A response saved to audit_qa_response.md")
-        print(f"\nResponse:\n{result}")
+        print(f"\nQ&A Mode - Query: {user_query}")
+        print(f"Response:\n{result}")
+        return result
         
     except Exception as e:
-        raise Exception(f"An error occurred while running Q&A mode: {e}")
+        error_msg = f"An error occurred while running Q&A mode: {e}"
+        print(error_msg)
+        raise Exception(error_msg)
 
 def run_research():
     """
@@ -88,7 +82,7 @@ def run_research():
     if len(sys.argv) > 1:
         user_query = " ".join(sys.argv[1:])
     else:
-        user_query = input("Enter your audit query (Research mode): ")
+        user_query = "What are the latest audit regulations for 2024?"
     
     if not user_query.strip():
         print("Error: No query provided.")
@@ -104,17 +98,14 @@ def run_research():
         research_crew = auditiq_crew.create_dynamic_crew("RESEARCH")
         result = research_crew.kickoff(inputs=inputs)
         
-        with open('audit_research_response.md', 'w') as f:
-            f.write(f"# Research Response (Web Search)\n\n")
-            f.write(f"**Query:** {user_query}\n\n")
-            f.write(f"**Response:**\n{result}\n")
-            f.write(f"\n---\n*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")
-        
-        print(f"\nResearch response saved to audit_research_response.md")
-        print(f"\nResponse:\n{result}")
+        print(f"\nResearch Mode - Query: {user_query}")
+        print(f"Response:\n{result}")
+        return result
         
     except Exception as e:
-        raise Exception(f"An error occurred while running research mode: {e}")
+        error_msg = f"An error occurred while running research mode: {e}"
+        print(error_msg)
+        raise Exception(error_msg)
 
 def train():
     """
