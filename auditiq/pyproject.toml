@@ -1,0 +1,29 @@
+[project]
+name = "auditiq"
+version = "0.1.0"
+description = "AuditIQ using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools]>=0.186.1,<1.0.0",
+    "azure-search-documents>=11.4.0",
+    "azure-core>=1.28.0",
+    "azure-ai-translation-document>=1.0.0",
+    "requests>=2.31.0"
+]
+
+[project.scripts]
+auditiq = "auditiq.main:run"
+run_crew = "auditiq.main:run"
+qa_mode = "auditiq.main:run_qa"
+research_mode = "auditiq.main:run_research"
+train = "auditiq.main:train"
+replay = "auditiq.main:replay"
+test = "auditiq.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"

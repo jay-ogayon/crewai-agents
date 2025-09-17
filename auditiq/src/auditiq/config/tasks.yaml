@@ -1,0 +1,82 @@
+query_routing_task:
+  description: >
+    Analyze the user query: "{user_query}"
+    
+    Determine if this query should be handled as:
+    1. Q&A - Can be answered using internal audit documents, policies, procedures, or existing knowledge
+    2. RESEARCH - Requires current external information, regulatory updates, or industry trends
+    3. TRANSLATE - Requests translation of a document (PDF or DOCX) from one language to another
+    
+    Consider these factors:
+    - Does it ask about internal policies, procedures, or historical audit findings? -> Q&A
+    - Does it need current regulations, recent changes, or industry trends? -> RESEARCH
+    - Does it request document translation (PDF/DOCX), document conversion, or language transformation? -> TRANSLATE
+    - Does it require both internal and external information? -> RESEARCH
+  expected_output: >
+    A single word: either "QA", "RESEARCH", or "TRANSLATE" followed by a brief explanation of your reasoning.
+  agent: query_router
+
+qa_task:
+  description: >
+    Answer the user query using internal audit knowledge base: "{user_query}"
+    
+    Search the audit-iq index for relevant documents, policies, procedures, and historical information
+    that can answer this question. Focus on providing accurate, specific information from internal sources.
+    
+    If the query cannot be fully answered from internal sources, indicate what additional information might be needed.
+  expected_output: >
+    A comprehensive answer based on internal audit documentation, including:
+    - Direct answer to the query
+    - Relevant policy references or document citations
+    - Any limitations or additional information needed
+    Formatted as markdown without '```'
+  agent: rag_agent
+
+research_task:
+  description: >
+    Conduct comprehensive research for the query: "{user_query}"
+    
+    Use web search to find current information about:
+    - Recent regulatory changes or updates
+    - Industry best practices and trends
+    - Current compliance requirements
+    - Emerging audit methodologies
+    
+    Focus on finding credible, up-to-date sources and synthesize the information into a coherent response.
+  expected_output: >
+    A detailed research report including:
+    - Current information addressing the query
+    - Key findings from credible sources
+    - Recent developments or changes
+    - Practical implications for audit practices
+    - Source citations
+    Formatted as markdown without '```'
+  agent: audit_researcher
+
+document_translation_task:
+  description: >
+    Translate the document (PDF or DOCX) specified in the request: "{user_query}"
+    
+    Extract the following information from the user request:
+    - Document file path (full absolute path)
+    - Target language (language code or language name)
+    - Source language (if specified, otherwise use auto-detection)
+    - Output file path (if specified, otherwise generate automatically)
+    
+    Use the document translation tool to convert the document while preserving:
+    - Document formatting and layout
+    - Images and graphics
+    - Tables and structured content
+    - Page numbering and headers/footers
+    
+    Ensure the translation maintains the professional quality needed for audit and compliance documentation.
+  expected_output: >
+    A summary report of the translation process including:
+    - Confirmation of successful translation
+    - Source and target languages used
+    - Input and output file paths
+    - File size information
+    - Any warnings or issues encountered
+    - Quality assurance notes about formatting preservation
+    Formatted as markdown without '```'
+  agent: document_translator
