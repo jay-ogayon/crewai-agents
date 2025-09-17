@@ -20,7 +20,7 @@ qa_task:
   description: >
     Answer the user query using internal audit knowledge base: "{user_query}"
     
-    Search the audit-iq index for relevant documents, policies, procedures, and historical information
+    Search the internal knowledge base using intelligent dual-index system for relevant documents, policies, procedures, and historical information
     that can answer this question. Focus on providing accurate, specific information from internal sources.
     
     If the query cannot be fully answered from internal sources, indicate what additional information might be needed.

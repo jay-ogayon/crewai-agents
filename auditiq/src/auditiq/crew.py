@@ -2,7 +2,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
-from auditiq.tools.custom_tool import azure_search_tool, serper_search_tool, document_translation_tool
+from auditiq.tools.custom_tool import AzureSearchTool, SerperSearchTool, DocumentTranslationTool
 
 @CrewBase
 class Auditiq():
@@ -24,7 +24,7 @@ class Auditiq():
         """Agent that searches internal audit knowledge base using Azure Search"""
         return Agent(
             config=self.agents_config['rag_agent'], # type: ignore[index]
-            tools=[azure_search_tool],
+            tools=[AzureSearchTool()],
             verbose=True
         )
 
@@ -33,7 +33,7 @@ class Auditiq():
         """Agent that conducts web research using SERPER API"""
         return Agent(
             config=self.agents_config['audit_researcher'], # type: ignore[index]
-            tools=[serper_search_tool],
+            tools=[SerperSearchTool()],
             verbose=True
         )
 
@@ -42,7 +42,7 @@ class Auditiq():
         """Agent that translates documents (PDF or DOCX) while preserving formatting"""
         return Agent(
             config=self.agents_config['document_translator'], # type: ignore[index]
-            tools=[document_translation_tool],
+            tools=[DocumentTranslationTool()],
             verbose=True
         )
 

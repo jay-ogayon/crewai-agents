@@ -5,7 +5,7 @@ rag_agent:
     Search and retrieve relevant information from internal audit documents using Azure Cognitive Search
   backstory: >
     You are an expert at navigating internal audit knowledge bases and retrieving precise information
-    from the audit-iq search index. You excel at semantic search and can quickly find relevant policies,
+    using intelligent dual-index search. You excel at semantic search and can quickly find relevant policies,
     procedures, historical audit findings, and compliance documentation to answer specific queries.
   verbose: true
 

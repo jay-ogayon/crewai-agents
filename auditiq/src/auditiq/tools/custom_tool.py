@@ -9,6 +9,33 @@ from azure.ai.translation.document import SingleDocumentTranslationClient
 from azure.ai.translation.document.models import DocumentTranslateContent
 import json
 
+def is_cloud_environment() -> bool:
+    """
+    Detect if running in CrewAI cloud environment vs local development.
+    """
+    # Check for common cloud environment indicators
+    cloud_indicators = [
+        'CREWAI_CLOUD',  # CrewAI specific
+        'KUBERNETES_SERVICE_HOST',  # Kubernetes
+        'AWS_LAMBDA_FUNCTION_NAME',  # AWS Lambda
+        'VERCEL',  # Vercel
+        'HEROKU',  # Heroku
+        'RAILWAY_ENVIRONMENT'  # Railway
+    ]
+    
+    # If any cloud indicator is present, assume cloud environment
+    if any(os.getenv(indicator) for indicator in cloud_indicators):
+        return True
+    
+    # Additional heuristics for cloud detection
+    if os.getenv('HOME') == '/home/runner':  # Common in cloud environments
+        return True
+    
+    if not os.path.exists('/usr/bin') or not os.access('/tmp', os.W_OK):  # Limited file system
+        return True
+        
+    return False
+
 
 class AzureSearchInput(BaseModel):
     """Input schema for Azure Search tool."""
@@ -80,7 +107,7 @@ class AzureSearchTool(BaseTool):
                 index_name = os.getenv("AzureSearchIndexName", "audit-iq")  # Policy index
                 index_description = "audit policy"
             
-            # Initialize search client
+            # Initialize search client with timeout
             credential = AzureKeyCredential(search_key)
             search_client = SearchClient(
                 endpoint=search_endpoint,
@@ -88,16 +115,32 @@ class AzureSearchTool(BaseTool):
                 credential=credential
             )
             
-            # Perform search
-            results = search_client.search(
-                search_text=query,
-                top=top,
-                include_total_count=True
-            )
+            # Perform search with timeout (30 seconds)
+            import time
+            start_time = time.time()
+            try:
+                results = search_client.search(
+                    search_text=query,
+                    top=top,
+                    include_total_count=True
+                )
+                
+                # Convert results to list to avoid timeout during iteration
+                results_list = list(results)
+                elapsed_time = time.time() - start_time
+                
+                if elapsed_time > 30:  # 30 second timeout
+                    return f"Search timeout after {elapsed_time:.1f} seconds. Please try a simpler query."
+                    
+            except Exception as search_error:
+                elapsed_time = time.time() - start_time
+                if elapsed_time > 30:
+                    return f"Search timeout after {elapsed_time:.1f} seconds: {str(search_error)}"
+                raise search_error
             
             # Format results
             formatted_results = []
-            for result in results:
+            for result in results_list:
                 result_dict = dict(result)
                 # Extract key fields (adjust based on your index schema)
                 title = result_dict.get('title', 'No title')
@@ -152,8 +195,8 @@ class SerperSearchTool(BaseTool):
                 "Content-Type": "application/json"
             }
             
-            # Make API request
-            response = requests.post(url, headers=headers, json=payload)
+            # Make API request with 15 second timeout
+            response = requests.post(url, headers=headers, json=payload, timeout=15)
             response.raise_for_status()
             
             data = response.json()
@@ -211,6 +254,15 @@ class DocumentTranslationTool(BaseTool):
         return content_type_mapping.get(file_extension, "application/octet-stream")
     
     def _run(self, file_path: str, target_language: str, source_language: str = "auto", output_file_path: str = "") -> str:
+        # Check if running in cloud environment
+        if is_cloud_environment():
+            return (
+                "Document translation is not available in cloud deployment due to file system restrictions. "
+                "This feature is only available in local development environments where file access is permitted. "
+                "For cloud-based document translation, please use the local deployment or consider using "
+                "Azure Document Translation service directly via API."
+            )
+        
         try:
             # Get Azure Document Translation configuration from environment
             endpoint = os.getenv("AZURE_DOCUMENT_TRANSLATION_ENDPOINT")
@@ -291,10 +343,40 @@ class DocumentTranslationTool(BaseTool):
             return f"Error translating document: {str(e)}"
 
 
-# Export tools for easy import
-azure_search_tool = AzureSearchTool()
-serper_search_tool = SerperSearchTool()
-document_translation_tool = DocumentTranslationTool()
+# Export tool classes for lazy instantiation
+# This prevents import-time errors if environment variables are missing
 
-# Keep backward compatibility
-pdf_translation_tool = document_translation_tool
+# For backward compatibility, provide lazy-loaded instances
+def get_azure_search_tool():
+    """Get Azure Search tool instance with lazy loading."""
+    return AzureSearchTool()
+
+def get_serper_search_tool():
+    """Get SERPER search tool instance with lazy loading."""
+    return SerperSearchTool()
+
+def get_document_translation_tool():
+    """Get document translation tool instance with lazy loading."""
+    return DocumentTranslationTool()
+
+# Keep legacy global instances for backward compatibility
+# These will be instantiated on first access, not at import time
+azure_search_tool = None
+serper_search_tool = None
+document_translation_tool = None
+pdf_translation_tool = None
+
+def _ensure_tools_loaded():
+    """Ensure tool instances are loaded."""
+    global azure_search_tool, serper_search_tool, document_translation_tool, pdf_translation_tool
+    if azure_search_tool is None:
+        azure_search_tool = AzureSearchTool()
+    if serper_search_tool is None:
+        serper_search_tool = SerperSearchTool()
+    if document_translation_tool is None:
+        document_translation_tool = DocumentTranslationTool()
+    if pdf_translation_tool is None:
+        pdf_translation_tool = document_translation_tool
+
+# Auto-load tools when module is accessed
+_ensure_tools_loaded()
