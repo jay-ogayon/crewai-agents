@@ -72,14 +72,37 @@ AZURE_DOCUMENT_TRANSLATION_KEY=your_translation_key
 
 ## 🎯 Usage
 
-### Quick Start
+### Interactive Mode (Local Development)
+When running locally, AuditIQ provides an interactive CLI with helpful prompts:
+
 ```bash
+# Main interactive mode with intelligent routing
 crewai run
+# or
+uv run auditiq
+
+# Force Q&A mode (internal knowledge base only)
+python3 src/auditiq/main.py qa
+
+# Force research mode (web search only)  
+python3 src/auditiq/main.py research
 ```
 
-### Alternative Commands
+**Interactive Features:**
+- 🔍 **Smart Query Classification**: Automatically routes queries to appropriate agents
+- 📚 **Dual Index Information**: Shows which index will be searched based on query type
+- ⚡ **Mode-Specific Prompts**: Tailored input prompts for Q&A vs Research modes
+- 🌐 **Environment Detection**: Automatically adapts to cloud vs local deployment
+
+### Command Line Usage
 ```bash
-uv run auditiq
+# Direct query execution
+crewai run "What are the audit policies for financial reporting?"
+uv run auditiq "How to perform risk assessment procedures?"
+
+# Specific mode execution
+python3 -c "from src.auditiq.main import run_qa; run_qa()" "SOX compliance requirements"
+python3 -c "from src.auditiq.main import run_research; run_research()" "Latest 2024 audit trends"
 ```
 
 ## 🧪 Testing Different Agents
