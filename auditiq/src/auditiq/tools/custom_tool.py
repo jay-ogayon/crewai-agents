@@ -42,72 +42,28 @@ class AzureSearchInput(BaseModel):
     query: str = Field(..., description="Search query for the audit knowledge base")
     top: int = Field(default=5, description="Number of search results to return")
 
-class AzureSearchTool(BaseTool):
-    name: str = "azure_search_tool"
+class EchoSearchTool(BaseTool):
+    name: str = "echo_search_tool"
     description: str = (
-        "Search the internal audit knowledge base using Azure Cognitive Search. "
-        "Automatically selects the appropriate index based on query content: "
-        "- Audit policy queries use the main audit-iq index "
-        "- Methodology queries use the methodology-specific index "
-        "Use this tool to find relevant audit documents, policies, procedures, "
-        "historical findings, and compliance documentation."
+        "Search GT Guidelines and Policy knowledge base using Azure Cognitive Search. "
+        "Searches the echo index specifically for GT company guidelines, policies, procedures, "
+        "and GT-specific requirements. Use this tool to find relevant GT internal documentation."
     )
     args_schema: Type[BaseModel] = AzureSearchInput
 
-    def _classify_query(self, query: str) -> str:
-        """
-        Classify the query to determine which index to use.
-        Returns 'policy' for audit policy queries, 'methodology' for methodology queries.
-        """
-        query_lower = query.lower()
-        
-        # Keywords that indicate methodology queries
-        methodology_keywords = [
-            'methodology', 'method', 'approach', 'technique', 'procedure', 'process',
-            'how to', 'steps', 'workflow', 'framework', 'best practice', 'guideline',
-            'implementation', 'execution', 'practice', 'standard operating', 'sop',
-            'performing', 'conducting', 'execute', 'carry out', 'technique for',
-            'standard procedures', 'procedures for', 'methods for'
-        ]
-        
-        # Keywords that indicate policy queries
-        policy_keywords = [
-            'policy', 'policies', 'regulation', 'rule', 'requirement', 'compliance',
-            'standard', 'mandate', 'directive', 'governance', 'audit rule',
-            'regulatory', 'legal', 'obligation', 'requirements for'
-        ]
-        
-        # Count matches for each category
-        methodology_score = sum(1 for keyword in methodology_keywords if keyword in query_lower)
-        policy_score = sum(1 for keyword in policy_keywords if keyword in query_lower)
-        
-        # Return the category with higher score, default to policy if tied
-        if methodology_score > policy_score:
-            return 'methodology'
-        else:
-            return 'policy'
-
     def _run(self, query: str, top: int = 5) -> str:
         try:
-            # Get Azure Search configuration from environment using correct variable names
-            search_endpoint = os.getenv("AzureSearchEnpoint")  # Note: keeping original spelling from user
+            # Get Azure Search configuration from environment
+            search_endpoint = os.getenv("AzureSearchEnpoint")
             search_key = os.getenv("AzureSearchAdminKey")
             
             if not search_endpoint or not search_key:
                 return "Error: Azure Search credentials not configured. Please check AzureSearchEnpoint and AzureSearchAdminKey in environment variables."
             
-            # Classify the query to determine which index to use
-            query_type = self._classify_query(query)
+            # Use echo index for GT Guidelines and Policy
+            index_name = os.getenv("AzureSearchIndexName2", "echo")
             
-            # Select appropriate index based on query classification
-            if query_type == 'methodology':
-                index_name = os.getenv("AzureSearchIndexName2", "echo")  # Methodology index
-                index_description = "methodology"
-            else:
-                index_name = os.getenv("AzureSearchIndexName", "audit-iq")  # Policy index
-                index_description = "audit policy"
-            
-            # Initialize search client with timeout and error handling
+            # Initialize search client
             try:
                 credential = AzureKeyCredential(search_key)
                 search_client = SearchClient(
@@ -128,11 +84,10 @@ class AzureSearchTool(BaseTool):
                     include_total_count=True
                 )
                 
-                # Convert results to list to avoid timeout during iteration
                 results_list = list(results)
                 elapsed_time = time.time() - start_time
                 
-                if elapsed_time > 30:  # 30 second timeout
+                if elapsed_time > 30:
                     return f"Search timeout after {elapsed_time:.1f} seconds. Please try a simpler query."
                     
             except Exception as search_error:
@@ -145,21 +100,94 @@ class AzureSearchTool(BaseTool):
             formatted_results = []
             for result in results_list:
                 result_dict = dict(result)
-                # Extract key fields (adjust based on your index schema)
                 title = result_dict.get('title', 'No title')
-                content = result_dict.get('content', 'No content available')[:500]  # Limit content length
+                content = result_dict.get('content', 'No content available')[:500]
                 score = result_dict.get('@search.score', 'N/A')
                 
                 formatted_results.append(f"**Title:** {title}\n**Score:** {score}\n**Content:** {content}...\n")
             
             if formatted_results:
-                header = f"Searched {index_description} index ({index_name}) and found {len(formatted_results)} results for query '{query}':\n\n"
+                header = f"Searched GT Guidelines and Policy index ({index_name}) and found {len(formatted_results)} results for query '{query}':\n\n"
                 return header + "\n---\n".join(formatted_results)
             else:
-                return f"No results found in {index_description} index ({index_name}) for query: '{query}'"
+                return f"No results found in GT Guidelines and Policy index ({index_name}) for query: '{query}'"
                 
         except Exception as e:
-            return f"Error searching Azure index: {str(e)}"
+            return f"Error searching GT Guidelines and Policy index: {str(e)}"
+
+
+class AuditSearchTool(BaseTool):
+    name: str = "audit_search_tool"
+    description: str = (
+        "Search audit methodology knowledge base using Azure Cognitive Search. "
+        "Searches the audit-iq index specifically for audit methodologies, techniques, procedures, "
+        "and best practices. Use this tool to find relevant audit methodology documentation."
+    )
+    args_schema: Type[BaseModel] = AzureSearchInput
+
+    def _run(self, query: str, top: int = 5) -> str:
+        try:
+            # Get Azure Search configuration from environment
+            search_endpoint = os.getenv("AzureSearchEnpoint")
+            search_key = os.getenv("AzureSearchAdminKey")
+            
+            if not search_endpoint or not search_key:
+                return "Error: Azure Search credentials not configured. Please check AzureSearchEnpoint and AzureSearchAdminKey in environment variables."
+            
+            # Use audit-iq index for audit methodology
+            index_name = os.getenv("AzureSearchIndexName", "audit-iq")
+            
+            # Initialize search client
+            try:
+                credential = AzureKeyCredential(search_key)
+                search_client = SearchClient(
+                    endpoint=search_endpoint,
+                    index_name=index_name,
+                    credential=credential
+                )
+            except Exception as init_error:
+                return f"Error initializing Azure Search client: {str(init_error)}. Please check your Azure Search credentials and endpoint configuration."
+            
+            # Perform search with timeout (30 seconds)
+            import time
+            start_time = time.time()
+            try:
+                results = search_client.search(
+                    search_text=query,
+                    top=top,
+                    include_total_count=True
+                )
+                
+                results_list = list(results)
+                elapsed_time = time.time() - start_time
+                
+                if elapsed_time > 30:
+                    return f"Search timeout after {elapsed_time:.1f} seconds. Please try a simpler query."
+                    
+            except Exception as search_error:
+                elapsed_time = time.time() - start_time
+                if elapsed_time > 30:
+                    return f"Search timeout after {elapsed_time:.1f} seconds: {str(search_error)}"
+                raise search_error
+            
+            # Format results
+            formatted_results = []
+            for result in results_list:
+                result_dict = dict(result)
+                title = result_dict.get('title', 'No title')
+                content = result_dict.get('content', 'No content available')[:500]
+                score = result_dict.get('@search.score', 'N/A')
+                
+                formatted_results.append(f"**Title:** {title}\n**Score:** {score}\n**Content:** {content}...\n")
+            
+            if formatted_results:
+                header = f"Searched audit methodology index ({index_name}) and found {len(formatted_results)} results for query '{query}':\n\n"
+                return header + "\n---\n".join(formatted_results)
+            else:
+                return f"No results found in audit methodology index ({index_name}) for query: '{query}'"
+                
+        except Exception as e:
+            return f"Error searching audit methodology index: {str(e)}"
 
 
 class SerperSearchInput(BaseModel):
@@ -235,8 +263,8 @@ class SerperSearchTool(BaseTool):
 
 class DocumentTranslationInput(BaseModel):
     """Input schema for Document Translation tool."""
-    file_path: str = Field(..., description="Full path to the document file to translate (PDF or DOCX)")
-    target_language: str = Field(..., description="Target language code (e.g., 'es' for Spanish, 'fr' for French)")
+    file_path: str = Field(..., description="Full path to the document file to translate (PDF or DOCX). Can also be just a filename to search in Documents folder")
+    target_language: str = Field(..., description="Target language code (e.g., 'es' for Spanish, 'fr' for French) or language name (e.g., 'spanish', 'french')")
     source_language: str = Field(default="auto", description="Source language code or 'auto' for automatic detection")
     output_file_path: str = Field(default="", description="Output path for translated document (optional, defaults to input path with language suffix)")
 
@@ -245,7 +273,9 @@ class DocumentTranslationTool(BaseTool):
     description: str = (
         "Translate documents (PDF or DOCX) from one language to another while preserving formatting "
         "using Azure Document Translation service. Supports various languages and maintains "
-        "document structure, images, tables, and layout. Auto-detects file format."
+        "document structure, images, tables, and layout. Can accept either full file paths or just "
+        "filenames (will search Documents folder automatically). Supports language codes (es, fr) or "
+        "language names (spanish, french). Auto-detects file format."
     )
     args_schema: Type[BaseModel] = DocumentTranslationInput
 
@@ -271,6 +301,18 @@ class DocumentTranslationTool(BaseTool):
                 "For cloud-based document translation, please use the local deployment or consider using "
                 "Azure Document Translation service directly via API."
             )
+        
+        # Check if this looks like a simple filename (not a full path)
+        if not os.path.isabs(file_path) and '/' not in file_path and '\\' not in file_path:
+            # Use the simplified translation helper for filename-only requests
+            try:
+                # Import here to avoid circular import
+                from .simple_translation import SimpleTranslationHelper
+                simple_helper = SimpleTranslationHelper()
+                return simple_helper.translate_document(file_path, target_language, source_language)
+            except Exception as e:
+                # Fall back to original logic if helper fails
+                pass
         
         try:
             # Get Azure Document Translation configuration from environment
@@ -356,9 +398,13 @@ class DocumentTranslationTool(BaseTool):
 # This prevents import-time errors if environment variables are missing
 
 # For backward compatibility, provide lazy-loaded instances
-def get_azure_search_tool():
-    """Get Azure Search tool instance with lazy loading."""
-    return AzureSearchTool()
+def get_echo_search_tool():
+    """Get Echo Search tool instance with lazy loading."""
+    return EchoSearchTool()
+
+def get_audit_search_tool():
+    """Get Audit Search tool instance with lazy loading."""
+    return AuditSearchTool()
 
 def get_serper_search_tool():
     """Get SERPER search tool instance with lazy loading."""
@@ -370,7 +416,8 @@ def get_document_translation_tool():
 
 # Keep legacy global instances for backward compatibility
 # These will be instantiated on first access, not at import time
-azure_search_tool = None
+echo_search_tool = None
+audit_search_tool = None
 serper_search_tool = None
 document_translation_tool = None
 pdf_translation_tool = None
@@ -406,7 +453,7 @@ def validate_environment_variables():
 
 def _ensure_tools_loaded():
     """Ensure tool instances are loaded with proper error handling."""
-    global azure_search_tool, serper_search_tool, document_translation_tool, pdf_translation_tool
+    global echo_search_tool, audit_search_tool, serper_search_tool, document_translation_tool, pdf_translation_tool
     
     try:
         # Validate environment variables first
@@ -414,8 +461,10 @@ def _ensure_tools_loaded():
         if env_issues and not is_cloud_environment():
             print(f"Environment validation warnings: {', '.join(env_issues)}")
         
-        if azure_search_tool is None:
-            azure_search_tool = AzureSearchTool()
+        if echo_search_tool is None:
+            echo_search_tool = EchoSearchTool()
+        if audit_search_tool is None:
+            audit_search_tool = AuditSearchTool()
         if serper_search_tool is None:
             serper_search_tool = SerperSearchTool()
         if document_translation_tool is None:
@@ -426,8 +475,10 @@ def _ensure_tools_loaded():
     except Exception as e:
         print(f"Warning: Tool initialization error: {e}")
         # Don't fail completely, just log the error
-        if azure_search_tool is None:
-            azure_search_tool = AzureSearchTool()
+        if echo_search_tool is None:
+            echo_search_tool = EchoSearchTool()
+        if audit_search_tool is None:
+            audit_search_tool = AuditSearchTool()
         if serper_search_tool is None:
             serper_search_tool = SerperSearchTool()
         if document_translation_tool is None:

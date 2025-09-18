@@ -33,6 +33,7 @@ Required environment variables in `.env`:
 - `SERPER_API_KEY` - SERPER API key for web search (for Audit Researcher Agent)
 - `AZURE_DOCUMENT_TRANSLATION_ENDPOINT` - Azure Document Translation service endpoint (for PDF Translator Agent)
 - `AZURE_DOCUMENT_TRANSLATION_KEY` - Azure Document Translation API key (for PDF Translator Agent)
+- `DOCUMENTS_FOLDER_PATH` - Custom Documents folder path (optional, auto-detects ~/Documents if not set)
 - Ensure Python >=3.10,<3.14 is installed
 - Run `crewai install` or `uv sync` to install dependencies
 
@@ -47,16 +48,25 @@ Required environment variables in `.env`:
 
 ### Agent Architecture
 
-#### 1. RAG Agent
-- **Purpose**: Search and answer content using Azure Cognitive Search
-- **Data Source**: `audit-iq` search index in Azure Search
+#### 1. Echo RAG Agent
+- **Purpose**: Search GT Guidelines and Policy content using Azure Cognitive Search
+- **Data Source**: `echo` search index in Azure Search (configurable via `AzureSearchIndexName2`)
 - **Capabilities**: 
-  - Semantic search across internal audit documents
-  - Contextual information retrieval
-  - Knowledge base querying for audit-specific content
+  - Semantic search across GT company guidelines and policies
+  - Contextual information retrieval for GT-specific requirements
+  - Knowledge base querying for GT internal documentation
 - **Configuration**: Uses Azure Search credentials from `.env`
 
-#### 2. Audit Researcher Agent  
+#### 2. Audit RAG Agent
+- **Purpose**: Search audit methodology content using Azure Cognitive Search
+- **Data Source**: `audit-iq` search index in Azure Search (configurable via `AzureSearchIndexName`)
+- **Capabilities**: 
+  - Semantic search across audit methodology documents
+  - Contextual information retrieval for audit techniques and procedures
+  - Knowledge base querying for audit best practices and methodologies
+- **Configuration**: Uses Azure Search credentials from `.env`
+
+#### 3. Audit Researcher Agent  
 - **Purpose**: Web-based research using SERPER API for current information
 - **Data Source**: Live web search via SERPER API
 - **Capabilities**:
@@ -66,7 +76,7 @@ Required environment variables in `.env`:
   - Supplemental research beyond internal knowledge base
 - **Configuration**: Uses SERPER API key from `.env`
 
-#### 3. PDF Translator Agent
+#### 4. PDF Translator Agent
 - **Purpose**: Translate PDF documents between languages while preserving formatting
 - **Data Source**: Local PDF files and Azure Document Translation API
 - **Capabilities**:
@@ -88,18 +98,20 @@ Required environment variables in `.env`:
 - Multi-agent coordination for comprehensive audit intelligence
 
 #### Workflow
-The system uses intelligent query routing to determine the appropriate workflow:
+The system uses intelligent LLM-based query routing to determine the appropriate workflow:
 
 1. **Query Routing**: Query Router Agent analyzes user input and classifies it as:
-   - **Q&A**: Internal knowledge base queries → Routes to RAG Agent
+   - **ECHO**: GT Guidelines and Policy queries → Routes to Echo RAG Agent
+   - **AUDIT**: Audit methodology queries → Routes to Audit RAG Agent
    - **RESEARCH**: Current information needs → Routes to Audit Researcher Agent  
    - **TRANSLATE**: PDF translation requests → Routes to PDF Translator Agent
 
-2. **Q&A Workflow**: RAG Agent queries internal audit-iq index for relevant documents
-3. **Research Workflow**: Audit Researcher Agent performs live web search for current information
-4. **Translation Workflow**: PDF Translator Agent converts documents between languages while preserving formatting
-5. **Analysis & Reporting**: Contextual insights based on the selected workflow
-6. **Output**: Specialized response based on query type (knowledge retrieval, research report, or translation confirmation)
+2. **ECHO Workflow**: Echo RAG Agent queries GT-specific echo index for relevant GT guidelines and policies
+3. **AUDIT Workflow**: Audit RAG Agent queries audit-iq index for relevant audit methodologies and procedures
+4. **Research Workflow**: Audit Researcher Agent performs live web search for current information
+5. **Translation Workflow**: PDF Translator Agent converts documents between languages while preserving formatting
+6. **Analysis & Reporting**: Contextual insights based on the selected workflow
+7. **Output**: Specialized response based on query type (GT knowledge retrieval, audit methodology, research report, or translation confirmation)
 
 #### Customization Points
 - `src/auditiq/config/agents.yaml` - Modify agent roles, search parameters, and translation settings
@@ -110,13 +122,15 @@ The system uses intelligent query routing to determine the appropriate workflow:
 
 ### Integration Details
 
-#### Azure Search Integration (RAG Agent)
-- **Dual Index System**: Automatically selects the appropriate index based on query content
-  - **Policy Index**: Configurable via `AzureSearchIndexName` (defaults to `audit-iq`) - for audit policies, regulations, compliance requirements
-  - **Methodology Index**: Configurable via `AzureSearchIndexName2` (defaults to `echo`) - for audit methodologies, procedures, techniques
-- **Query Classification**: Intelligent routing based on keywords like "methodology", "policy", "procedure", etc.
-- **Search Type**: Semantic search with AI-powered relevance
-- **Content**: Internal audit documents, policies, procedures, methodologies
+#### Azure Search Integration (Echo & Audit RAG Agents)
+- **Dual Index System**: Specialized agents for targeted search capabilities
+  - **Echo Index**: Configurable via `AzureSearchIndexName2` (defaults to `echo`) - GT Guidelines and Policy documents accessed by Echo RAG Agent
+  - **Audit Index**: Configurable via `AzureSearchIndexName` (defaults to `audit-iq`) - Audit methodology documents accessed by Audit RAG Agent
+- **Query Classification**: Intelligent LLM-based routing determines which specialized agent to use
+- **Search Type**: Semantic search with AI-powered relevance for each specific domain
+- **Content**: 
+  - Echo Agent: GT company guidelines, policies, procedures, GT-specific requirements
+  - Audit Agent: Audit methodologies, techniques, procedures, best practices
 - **Authentication**: Azure Search key-based authentication via `AzureSearchAdminKey`
 - **Endpoint**: Configured via `AzureSearchEnpoint`
 
@@ -142,7 +156,19 @@ Enhanced inputs for audit intelligence:
 - `jurisdiction`: Geographic or regulatory jurisdiction for focused research
 - `user_query`: Primary input that gets intelligently routed to appropriate agent workflow
 
-For PDF translation requests, include:
+For document translation, you can use either:
+
+**Simple format (recommended):**
+- `"translate filename.pdf to spanish"` - The system will automatically find the file in Documents folder
+- Supports both language codes (`es`) and names (`spanish`, `french`, etc.)
+- Files are searched in this order:
+  1. Custom path from `DOCUMENTS_FOLDER_PATH` environment variable
+  2. `./Documents` (project Documents folder)
+  3. `../Documents` (parent directory Documents folder) 
+  4. `~/Documents` (user's Documents folder)
+  5. Platform-specific locations (OneDrive, iCloud, etc.)
+
+**Full path format (legacy):**
 - `pdf_file_path`: Full absolute path to the PDF document
 - `target_language`: Target language code (e.g., 'es', 'fr', 'de', 'zh')
 - `source_language`: Source language (optional, uses auto-detection if not specified)

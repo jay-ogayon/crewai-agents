@@ -5,22 +5,23 @@ Welcome to **AuditIQ**, an advanced multi-agent AI audit system powered by [crew
 ## 🌟 Features
 
 - **🤖 Intelligent Query Routing**: Automatically routes queries to the most appropriate specialized agent
-- **📚 Dual-Index RAG Search**: Intelligent search across specialized indexes - audit policies vs. methodologies - using Azure Cognitive Search
+- **📚 Specialized RAG Search**: LLM-powered routing to specialized agents for GT Guidelines (echo index) vs. Audit Methodology (audit-iq index)
 - **🌐 Live Web Research**: Real-time research on current audit regulations and industry trends
 - **📄 PDF Translation**: Translate audit documents between languages while preserving formatting
 - **⚡ Multi-Agent Collaboration**: Specialized agents working together for comprehensive audit intelligence
 
 ## 🏗️ Architecture
 
-### Three Specialized Agents:
+### Four Specialized Agents:
 
-1. **🔍 RAG Agent**: Searches internal audit knowledge base using dual Azure Search indexes (policies vs. methodologies)
-2. **🌐 Audit Researcher**: Conducts web research using SERPER API for current information
-3. **📄 PDF Translator**: Translates documents between languages using Azure Document Translation
+1. **🔍 Echo RAG Agent**: Searches GT Guidelines and Policy using the echo index for GT-specific content
+2. **🔍 Audit RAG Agent**: Searches audit methodology using the audit-iq index for audit techniques and procedures
+3. **🌐 Audit Researcher**: Conducts web research using SERPER API for current information
+4. **📄 PDF Translator**: Translates documents between languages using Azure Document Translation
 
-### Intelligent Workflow:
+### Intelligent LLM-Based Workflow:
 ```
-User Query → Query Router → Appropriate Agent → Specialized Response
+User Query → LLM Query Router → Specialized Agent Selection → Targeted Index Search → Expert Response
 ```
 
 ## 📋 Prerequisites
@@ -56,11 +57,11 @@ AZURE_API_KEY=your_azure_openai_key
 AZURE_API_BASE=https://your-openai-resource.openai.azure.com/
 AZURE_API_VERSION=2025-01-01-preview
 
-# Azure Search Configuration (RAG Agent - Dual Index System)
+# Azure Search Configuration (Specialized RAG Agents)
 AzureSearchEnpoint=https://your-search-service.search.windows.net
 AzureSearchAdminKey=your_search_key
-AzureSearchIndexName=audit-iq  # For audit policies, regulations, compliance
-AzureSearchIndexName2=echo     # For audit methodologies, procedures, techniques
+AzureSearchIndexName=audit-iq  # Audit RAG Agent - audit methodologies, procedures, techniques
+AzureSearchIndexName2=echo     # Echo RAG Agent - GT Guidelines, policies, GT-specific requirements
 
 # SERPER API Configuration (Research Agent)
 SERPER_API_KEY=your_serper_api_key
@@ -89,9 +90,9 @@ python3 src/auditiq/main.py research
 ```
 
 **Interactive Features:**
-- 🔍 **Smart Query Classification**: Automatically routes queries to appropriate agents
-- 📚 **Dual Index Information**: Shows which index will be searched based on query type
-- ⚡ **Mode-Specific Prompts**: Tailored input prompts for Q&A vs Research modes
+- 🔍 **Smart LLM Query Classification**: Automatically routes queries to appropriate specialized agents
+- 📚 **Specialized Agent Routing**: Shows which agent (Echo/Audit/Research/Translate) will handle the query
+- ⚡ **Agent-Specific Responses**: Tailored responses from GT Guidelines, Audit Methodology, Research, or Translation specialists
 - 🌐 **Environment Detection**: Automatically adapts to cloud vs local deployment
 
 ### Command Line Usage
@@ -107,34 +108,31 @@ python3 -c "from src.auditiq.main import run_research; run_research()" "Latest 2
 
 ## 🧪 Testing Different Agents
 
-### 🔍 RAG Agent (Q&A) - Internal Knowledge Base with Dual Index System
-The system automatically selects between two specialized indexes based on query content:
-
-#### 📋 Policy Index (audit-iq) - Audit Policies & Compliance
-Test with questions about audit policies, regulations, and compliance:
+### 🏢 Echo RAG Agent - GT Guidelines & Policy (echo index)
+Test with questions about GT company guidelines, policies, and GT-specific requirements:
 
 ```bash
-# Test Policy Index (AzureSearchIndexName = audit-iq)
-echo "What are the audit policies for financial reporting?" | crewai run
-echo "What are compliance requirements for SOX?" | crewai run
-echo "What are the regulatory requirements for auditing?" | crewai run
-echo "What governance standards apply to audit committees?" | crewai run
+# Test Echo RAG Agent (GT Guidelines & Policy)
+echo "What are GT's expense approval policies?" | crewai run
+echo "Show me GT company guidelines for remote work" | crewai run
+echo "What are GT's compliance requirements for vendors?" | crewai run
+echo "What GT procedures must I follow for procurement?" | crewai run
 ```
 
-#### 🔧 Methodology Index (echo) - Audit Procedures & Techniques
-Test with questions about audit methodologies, procedures, and techniques:
+### 🔍 Audit RAG Agent - Audit Methodology (audit-iq index)  
+Test with questions about audit methodologies, techniques, and procedures:
 
 ```bash
-# Test Methodology Index (AzureSearchIndexName2 = echo)
-echo "What methods should I follow for testing internal controls?" | crewai run
-echo "How to implement audit sampling methodology?" | crewai run
-echo "What procedures should I follow for risk assessment?" | crewai run
-echo "What are the standard procedures for audit evidence collection?" | crewai run
+# Test Audit RAG Agent (Audit Methodologies)
+echo "What audit methodology should I use for risk assessment?" | crewai run
+echo "How do I perform substantive testing procedures?" | crewai run
+echo "What are the best practices for audit sampling?" | crewai run
+echo "What procedures should I follow for internal control testing?" | crewai run
 ```
 
 **Expected Output**: Look for confirmation messages like:
-- `"Searched audit policy index (audit-iq) and found X results"` for policy queries
-- `"Searched methodology index (echo) and found X results"` for methodology queries
+- `"Searched GT Guidelines and Policy index (echo) and found X results"` for GT queries
+- `"Searched audit methodology index (audit-iq) and found X results"` for audit queries
 
 ### 🌐 Audit Researcher Agent (RESEARCH) - Web Search
 Test with questions requiring current external information:
@@ -156,36 +154,43 @@ echo "Translate my Docx file /Users/ferdinanda/Desktop/AuditIQ/auditiq/Documents
 echo "Convert Documents/AB8782.pdf to French while preserving formatting" | uv run auditiq
 ```
 
-## 🎯 Dual Index System
+## 🎯 LLM-Based Agent Routing System
 
-The RAG Agent intelligently routes queries to specialized indexes based on content analysis:
+The Query Router uses Azure OpenAI LLM to intelligently analyze queries and route them to the most appropriate specialized agent:
 
-### 📋 **Policy Queries → audit-iq Index**
-Keywords: `policy`, `regulation`, `compliance`, `requirement`, `governance`, `standard`, `mandate`
-
-Examples:
-- "What are the audit policies for financial reporting?"
-- "What are compliance requirements for SOX?"
-- "What governance standards apply to audit committees?"
-- "What are the regulatory requirements for auditing?"
-
-### 🔧 **Methodology Queries → echo Index** 
-Keywords: `methodology`, `procedure`, `technique`, `how to`, `steps`, `methods for`, `standard procedures`
+### 🏢 **GT Queries → Echo RAG Agent (echo index)**
+GT company-specific questions about guidelines, policies, and internal procedures:
 
 Examples:
-- "What methods should I follow for testing internal controls?"
-- "How to implement audit sampling methodology?"
-- "What procedures should I follow for risk assessment?"
-- "What are the standard procedures for audit evidence collection?"
+- "What are GT's expense approval policies?"
+- "Show me GT company guidelines for remote work"
+- "What are GT's compliance requirements for vendors?"
+- "What GT procedures must I follow for procurement?"
+
+### 🔍 **Audit Methodology Queries → Audit RAG Agent (audit-iq index)** 
+Questions about audit techniques, methodologies, and professional practices:
+
+Examples:
+- "What audit methodology should I use for risk assessment?"
+- "How do I perform substantive testing procedures?"
+- "What are the best practices for audit sampling?"
+- "What procedures should I follow for internal control testing?"
 
 ## 📝 Sample Questions by Agent Type
 
-### 📚 **Q&A Questions (Routes to RAG Agent with Smart Index Selection)**
-- "What are our company's audit policies for financial reporting?" *(→ Policy Index)*
-- "Explain our risk assessment procedures" *(→ Methodology Index)*
-- "What documentation is required for expense audits?" *(→ Policy Index)*
-- "Find information about our internal control frameworks" *(→ Policy Index)*
-- "What are the audit findings from last quarter's review?" *(→ Policy Index)*
+### 🏢 **GT Guidelines Questions (Routes to Echo RAG Agent)**
+- "What are GT's expense approval policies?"
+- "Show me GT company guidelines for remote work"
+- "What are GT's compliance requirements for vendors?"
+- "What GT procedures must I follow for procurement?"
+- "Find GT internal documentation about employee onboarding"
+
+### 🔍 **Audit Methodology Questions (Routes to Audit RAG Agent)**
+- "What audit methodology should I use for risk assessment?"
+- "How do I perform substantive testing procedures?" 
+- "What are the best practices for audit sampling?"
+- "What procedures should I follow for internal control testing?"
+- "Explain audit evidence collection techniques"
 
 ### 🔬 **Research Questions (Routes to Audit Researcher)**
 - "What are the latest PCAOB audit standards for 2024?"
@@ -203,16 +208,17 @@ Examples:
 ## ⚙️ Customization
 
 ### Configuration Files
-- **`src/auditiq/config/agents.yaml`** - Define agent roles, goals, and capabilities
-- **`src/auditiq/config/tasks.yaml`** - Configure task workflows and expectations
-- **`src/auditiq/crew.py`** - Add custom logic, tools, and agent coordination
-- **`src/auditiq/tools/custom_tool.py`** - Implement specialized tools and integrations
+- **`src/auditiq/config/agents.yaml`** - Define specialized agent roles (Echo RAG, Audit RAG, Research, Translation)
+- **`src/auditiq/config/tasks.yaml`** - Configure task workflows and LLM routing expectations
+- **`src/auditiq/crew.py`** - Manage agent coordination and dynamic crew creation
+- **`src/auditiq/tools/custom_tool.py`** - Implement specialized search tools (EchoSearchTool, AuditSearchTool)
 
-### Adding New Agents
-1. Define agent configuration in `agents.yaml`
-2. Create corresponding task in `tasks.yaml`
-3. Add agent method in `crew.py`
-4. Update query routing logic for new agent type
+### Adding New Specialized Agents
+1. Define new agent configuration in `agents.yaml`
+2. Create corresponding specialized task in `tasks.yaml`
+3. Add agent method and routing logic in `crew.py`
+4. Update LLM query routing prompt to include new agent type
+5. Create specialized search tool if needed
 
 ## 🔧 Development Commands
 

@@ -3,34 +3,52 @@ query_routing_task:
     Analyze the user query: "{user_query}"
     
     Determine if this query should be handled as:
-    1. Q&A - Can be answered using internal audit documents, policies, procedures, or existing knowledge
-    2. RESEARCH - Requires current external information, regulatory updates, or industry trends
-    3. TRANSLATE - Requests translation of a document (PDF or DOCX) from one language to another
+    1. ECHO - Questions about GT Guidelines, GT company policies, GT procedures, or GT-specific requirements
+    2. AUDIT - Questions about audit methodologies, audit techniques, audit procedures, or general audit practices
+    3. RESEARCH - Requires current external information, regulatory updates, or industry trends
+    4. TRANSLATE - Requests translation of a document (PDF or DOCX) from one language to another
     
     Consider these factors:
-    - Does it ask about internal policies, procedures, or historical audit findings? -> Q&A
+    - Does it ask about GT company guidelines, GT policies, GT procedures, or GT-specific requirements? -> ECHO
+    - Does it ask about audit methodologies, audit techniques, audit procedures, or general audit practices? -> AUDIT
     - Does it need current regulations, recent changes, or industry trends? -> RESEARCH
     - Does it request document translation (PDF/DOCX), document conversion, or language transformation? -> TRANSLATE
     - Does it require both internal and external information? -> RESEARCH
   expected_output: >
-    A single word: either "QA", "RESEARCH", or "TRANSLATE" followed by a brief explanation of your reasoning.
+    A single word: either "ECHO", "AUDIT", "RESEARCH", or "TRANSLATE" followed by a brief explanation of your reasoning.
   agent: query_router
 
-qa_task:
+echo_task:
   description: >
-    Answer the user query using internal audit knowledge base: "{user_query}"
+    Answer the user query using GT Guidelines and Policy knowledge base: "{user_query}"
     
-    Search the internal knowledge base using intelligent dual-index system for relevant documents, policies, procedures, and historical information
-    that can answer this question. Focus on providing accurate, specific information from internal sources.
+    Search the echo index for relevant GT company guidelines, policies, procedures, and GT-specific requirements
+    that can answer this question. Focus on providing accurate, specific information from GT internal sources.
     
-    If the query cannot be fully answered from internal sources, indicate what additional information might be needed.
+    If the query cannot be fully answered from GT sources, indicate what additional information might be needed.
   expected_output: >
-    A comprehensive answer based on internal audit documentation, including:
+    A comprehensive answer based on GT Guidelines and Policy documentation, including:
     - Direct answer to the query
-    - Relevant policy references or document citations
+    - Relevant GT policy references or document citations
     - Any limitations or additional information needed
     Formatted as markdown without '```'
-  agent: rag_agent
+  agent: echo_rag_agent
+
+audit_task:
+  description: >
+    Answer the user query using audit methodology knowledge base: "{user_query}"
+    
+    Search the audit-iq index for relevant audit methodologies, techniques, procedures, and best practices
+    that can answer this question. Focus on providing accurate, specific information from audit methodology sources.
+    
+    If the query cannot be fully answered from audit methodology sources, indicate what additional information might be needed.
+  expected_output: >
+    A comprehensive answer based on audit methodology documentation, including:
+    - Direct answer to the query
+    - Relevant methodology references or document citations
+    - Any limitations or additional information needed
+    Formatted as markdown without '```'
+  agent: audit_rag_agent
 
 research_task:
   description: >
@@ -58,10 +76,16 @@ document_translation_task:
     Translate the document (PDF or DOCX) specified in the request: "{user_query}"
     
     Extract the following information from the user request:
-    - Document file path (full absolute path)
-    - Target language (language code or language name)
+    - Document filename (can be just filename like "report.pdf" or full path)
+    - Target language (language code like "es" or language name like "spanish")
     - Source language (if specified, otherwise use auto-detection)
     - Output file path (if specified, otherwise generate automatically)
+    
+    The system will automatically:
+    - Search for the file in the Documents folder if only filename is provided
+    - Handle both Mac and Windows file systems seamlessly
+    - Convert language names to proper codes (spanish -> es, french -> fr, etc.)
+    - Place translated files in the same folder with language suffix
     
     Use the document translation tool to convert the document while preserving:
     - Document formatting and layout

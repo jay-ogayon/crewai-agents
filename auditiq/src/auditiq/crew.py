@@ -2,7 +2,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
-from auditiq.tools.custom_tool import AzureSearchTool, SerperSearchTool, DocumentTranslationTool
+from auditiq.tools.custom_tool import EchoSearchTool, AuditSearchTool, SerperSearchTool, DocumentTranslationTool
 
 @CrewBase
 class Auditiq():
@@ -20,11 +20,20 @@ class Auditiq():
         )
 
     @agent
-    def rag_agent(self) -> Agent:
-        """Agent that searches internal audit knowledge base using Azure Search"""
+    def echo_rag_agent(self) -> Agent:
+        """Agent that searches GT Guidelines and Policy using echo index"""
         return Agent(
-            config=self.agents_config['rag_agent'], # type: ignore[index]
-            tools=[AzureSearchTool()],
+            config=self.agents_config['echo_rag_agent'], # type: ignore[index]
+            tools=[EchoSearchTool()],
+            verbose=True
+        )
+
+    @agent
+    def audit_rag_agent(self) -> Agent:
+        """Agent that searches audit methodology using audit-iq index"""
+        return Agent(
+            config=self.agents_config['audit_rag_agent'], # type: ignore[index]
+            tools=[AuditSearchTool()],
             verbose=True
         )
 
@@ -54,10 +63,17 @@ class Auditiq():
         )
 
     @task
-    def qa_task(self) -> Task:
-        """Task for answering queries using internal knowledge base"""
+    def echo_task(self) -> Task:
+        """Task for answering queries using GT Guidelines and Policy"""
         return Task(
-            config=self.tasks_config['qa_task'], # type: ignore[index]
+            config=self.tasks_config['echo_task'], # type: ignore[index]
+        )
+
+    @task
+    def audit_task(self) -> Task:
+        """Task for answering queries using audit methodology"""
+        return Task(
+            config=self.tasks_config['audit_task'], # type: ignore[index]
         )
 
     @task
@@ -76,11 +92,19 @@ class Auditiq():
 
     def create_dynamic_crew(self, query_type: str) -> Crew:
         """Creates a crew based on the determined query type"""
-        if query_type.upper().startswith('QA'):
-            # Q&A workflow: Use only RAG agent
+        if query_type.upper().startswith('ECHO'):
+            # ECHO workflow: Use GT Guidelines and Policy agent
             return Crew(
-                agents=[self.rag_agent()],
-                tasks=[self.qa_task()],
+                agents=[self.echo_rag_agent()],
+                tasks=[self.echo_task()],
+                process=Process.sequential,
+                verbose=True,
+            )
+        elif query_type.upper().startswith('AUDIT'):
+            # AUDIT workflow: Use audit methodology agent
+            return Crew(
+                agents=[self.audit_rag_agent()],
+                tasks=[self.audit_task()],
                 process=Process.sequential,
                 verbose=True,
             )
@@ -114,7 +138,7 @@ class Auditiq():
     def kickoff_intelligent_routing(self, inputs: dict) -> str:
         """
         Intelligent routing workflow:
-        1. Route the query to determine if it's Q&A or Research
+        1. Route the query to determine if it's ECHO, AUDIT, RESEARCH, or TRANSLATE
         2. Execute the appropriate specialized crew
         3. Return the final result
         """
