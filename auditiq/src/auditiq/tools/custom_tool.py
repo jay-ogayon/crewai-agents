@@ -9,33 +9,6 @@ from azure.ai.translation.document import SingleDocumentTranslationClient
 from azure.ai.translation.document.models import DocumentTranslateContent
 import json
 
-def is_cloud_environment() -> bool:
-    """
-    Detect if running in CrewAI cloud environment vs local development.
-    """
-    # Check for common cloud environment indicators
-    cloud_indicators = [
-        'CREWAI_CLOUD',  # CrewAI specific
-        'KUBERNETES_SERVICE_HOST',  # Kubernetes
-        'AWS_LAMBDA_FUNCTION_NAME',  # AWS Lambda
-        'VERCEL',  # Vercel
-        'HEROKU',  # Heroku
-        'RAILWAY_ENVIRONMENT'  # Railway
-    ]
-    
-    # If any cloud indicator is present, assume cloud environment
-    if any(os.getenv(indicator) for indicator in cloud_indicators):
-        return True
-    
-    # Additional heuristics for cloud detection
-    if os.getenv('HOME') == '/home/runner':  # Common in cloud environments
-        return True
-    
-    if not os.path.exists('/usr/bin') or not os.access('/tmp', os.W_OK):  # Limited file system
-        return True
-        
-    return False
-
 
 class AzureSearchInput(BaseModel):
     """Input schema for Azure Search tool."""
@@ -293,15 +266,6 @@ class DocumentTranslationTool(BaseTool):
         return content_type_mapping.get(file_extension, "application/octet-stream")
     
     def _run(self, file_path: str, target_language: str, source_language: str = "auto", output_file_path: str = "") -> str:
-        # Check if running in cloud environment
-        if is_cloud_environment():
-            return (
-                "Document translation is not available in cloud deployment due to file system restrictions. "
-                "This feature is only available in local development environments where file access is permitted. "
-                "For cloud-based document translation, please use the local deployment or consider using "
-                "Azure Document Translation service directly via API."
-            )
-        
         # Check if this looks like a simple filename (not a full path)
         if not os.path.isabs(file_path) and '/' not in file_path and '\\' not in file_path:
             # Use the simplified translation helper for filename-only requests
@@ -458,7 +422,7 @@ def _ensure_tools_loaded():
     try:
         # Validate environment variables first
         env_issues = validate_environment_variables()
-        if env_issues and not is_cloud_environment():
+        if env_issues:
             print(f"Environment validation warnings: {', '.join(env_issues)}")
         
         if echo_search_tool is None:

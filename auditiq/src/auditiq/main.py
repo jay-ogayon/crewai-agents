@@ -6,7 +6,6 @@ import os
 from datetime import datetime
 
 from auditiq.crew import Auditiq
-from auditiq.tools.custom_tool import is_cloud_environment
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -58,19 +57,13 @@ def run():
     if len(sys.argv) > 1:
         user_query = " ".join(sys.argv[1:])
     else:
-        # Environment-aware input handling
-        if is_cloud_environment():
-            # Cloud deployment: use a default query if none provided
-            user_query = "What are the audit policies for financial reporting?"
-            print(f"🌐 Cloud environment detected, using default query: {user_query}")
-        else:
-            # Local development: prompt user for interactive input
-            print("🔍 AuditIQ - Intelligent Multi-Agent Audit System")
-            print("📚 Test dual index system:")
-            print("   • Policy queries → audit-iq index (policies, regulations, compliance)")
-            print("   • Methodology queries → echo index (procedures, techniques, how-to)")
-            print()
-            user_query = input("Enter your audit query: ").strip()
+        # Interactive input handling
+        print("🔍 AuditIQ - Intelligent Multi-Agent Audit System")
+        print("📚 Test dual index system:")
+        print("   • Policy queries → audit-iq index (policies, regulations, compliance)")
+        print("   • Methodology queries → echo index (procedures, techniques, how-to)")
+        print()
+        user_query = input("Enter your audit query: ").strip()
     
     if not user_query.strip():
         print("Error: No query provided.")
@@ -90,7 +83,6 @@ def run():
         print(f"🔍 Processing query: {user_query}")
         result = auditiq_crew.kickoff_intelligent_routing(inputs)
         
-        # For cloud deployment, just return the result instead of writing to file
         print(f"✅ Query processed successfully")
         print(f"\nQuery: {user_query}")
         print(f"Response:\n{result}")
@@ -99,8 +91,7 @@ def run():
     except Exception as e:
         error_msg = f"An error occurred while running the crew: {e}"
         print(f"❌ Error: {error_msg}")
-        # Don't raise in cloud environment to prevent deployment failure
-        return f"Error: {error_msg}"
+        raise Exception(error_msg)
 
 def run_qa():
     """
@@ -109,19 +100,13 @@ def run_qa():
     if len(sys.argv) > 1:
         user_query = " ".join(sys.argv[1:])
     else:
-        # Environment-aware input handling
-        if is_cloud_environment():
-            # Cloud deployment: use a default query if none provided
-            user_query = "What are the audit policies for financial reporting?"
-            print(f"🌐 Cloud environment detected, using default Q&A query: {user_query}")
-        else:
-            # Local development: prompt user for interactive input
-            print("🔍 AuditIQ - Q&A Mode (Internal Knowledge Base Only)")
-            print("📚 Searches dual index system:")
-            print("   • Policy queries → audit-iq index (policies, regulations, compliance)")
-            print("   • Methodology queries → echo index (procedures, techniques, how-to)")
-            print()
-            user_query = input("Enter your audit query for Q&A mode: ").strip()
+        # Interactive input handling
+        print("🔍 AuditIQ - Q&A Mode (Internal Knowledge Base Only)")
+        print("📚 Searches dual index system:")
+        print("   • Policy queries → audit-iq index (policies, regulations, compliance)")
+        print("   • Methodology queries → echo index (procedures, techniques, how-to)")
+        print()
+        user_query = input("Enter your audit query for Q&A mode: ").strip()
     
     if not user_query.strip():
         print("Error: No query provided.")
@@ -153,20 +138,14 @@ def run_research():
     if len(sys.argv) > 1:
         user_query = " ".join(sys.argv[1:])
     else:
-        # Environment-aware input handling
-        if is_cloud_environment():
-            # Cloud deployment: use a default query if none provided
-            user_query = "What are the latest audit regulations for 2024?"
-            print(f"🌐 Cloud environment detected, using default research query: {user_query}")
-        else:
-            # Local development: prompt user for interactive input
-            print("🔍 AuditIQ - Research Mode (Web Search Only)")
-            print("🌐 Searches current web information:")
-            print("   • Latest regulatory updates and compliance requirements")
-            print("   • Industry trends and emerging audit methodologies")
-            print("   • Recent changes in audit standards and practices")
-            print()
-            user_query = input("Enter your audit query for research mode: ").strip()
+        # Interactive input handling
+        print("🔍 AuditIQ - Research Mode (Web Search Only)")
+        print("🌐 Searches current web information:")
+        print("   • Latest regulatory updates and compliance requirements")
+        print("   • Industry trends and emerging audit methodologies")
+        print("   • Recent changes in audit standards and practices")
+        print()
+        user_query = input("Enter your audit query for research mode: ").strip()
     
     if not user_query.strip():
         print("Error: No query provided.")
