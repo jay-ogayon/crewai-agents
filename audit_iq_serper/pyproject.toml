@@ -1,0 +1,19 @@
+[project]
+name = "audit_iq_serper"
+version = "0.1.0"
+description = "AuditIQ SERPER Search Tool - Web search capabilities for audit and compliance research"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai>=0.186.1",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "tool"
