@@ -25,11 +25,11 @@ class AuditIqAuditRag(BaseTool):
     def _run(self, query: str, top: int = 5) -> str:
         try:
             # Get Azure Search configuration from environment
-            search_endpoint = os.getenv("AzureSearchEnpoint")
+            search_endpoint = os.getenv("AzureSearchEndpoint")
             search_key = os.getenv("AzureSearchAdminKey")
             
             if not search_endpoint or not search_key:
-                return "Error: Azure Search credentials not configured. Please check AzureSearchEnpoint and AzureSearchAdminKey in environment variables."
+                return "Error: Azure Search credentials not configured. Please check AzureSearchEndpoint and AzureSearchAdminKey in environment variables."
             
             # Use audit-iq index for audit methodology (hardcoded)
             index_name = "audit-iq"

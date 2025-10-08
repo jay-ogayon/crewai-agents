@@ -35,7 +35,7 @@ cp .env.example .env
 
 2. Configure your Azure Search credentials in the `.env` file:
 ```
-AzureSearchEnpoint=https://your-search-service.search.windows.net
+AzureSearchEndpoint=https://your-search-service.search.windows.net
 AzureSearchAdminKey=your_azure_search_admin_key_here
 ```
 

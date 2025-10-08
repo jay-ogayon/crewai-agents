@@ -29,13 +29,13 @@ class TestAuditIqEchoRag(unittest.TestCase):
         result = self.tool._run("test query")
         self.assertIn("Azure Search credentials not configured", result)
     
-    @patch.dict(os.environ, {"AzureSearchEnpoint": "https://test.search.windows.net", "AzureSearchAdminKey": ""})
+    @patch.dict(os.environ, {"AzureSearchEndpoint": "https://test.search.windows.net", "AzureSearchAdminKey": ""})
     def test_missing_key(self):
         """Test behavior when Azure Search key is missing."""
         result = self.tool._run("test query")
         self.assertIn("Azure Search credentials not configured", result)
     
-    @patch.dict(os.environ, {"AzureSearchEnpoint": "https://test.search.windows.net", "AzureSearchAdminKey": "test_key"})
+    @patch.dict(os.environ, {"AzureSearchEndpoint": "https://test.search.windows.net", "AzureSearchAdminKey": "test_key"})
     @patch('audit_iq_echo_rag.tool.SearchClient')
     def test_successful_search(self, mock_search_client):
         """Test successful search response."""
@@ -56,7 +56,7 @@ class TestAuditIqEchoRag(unittest.TestCase):
         self.assertIn("GT Travel Policy", result)
         self.assertIn("0.95", result)
     
-    @patch.dict(os.environ, {"AzureSearchEnpoint": "https://test.search.windows.net", "AzureSearchAdminKey": "test_key"})
+    @patch.dict(os.environ, {"AzureSearchEndpoint": "https://test.search.windows.net", "AzureSearchAdminKey": "test_key"})
     @patch('audit_iq_echo_rag.tool.SearchClient')
     def test_no_results(self, mock_search_client):
         """Test response when no results are found."""
@@ -69,7 +69,7 @@ class TestAuditIqEchoRag(unittest.TestCase):
         
         self.assertIn("No results found in GT Guidelines and Policy index (echo)", result)
     
-    @patch.dict(os.environ, {"AzureSearchEnpoint": "https://test.search.windows.net", "AzureSearchAdminKey": "test_key"})
+    @patch.dict(os.environ, {"AzureSearchEndpoint": "https://test.search.windows.net", "AzureSearchAdminKey": "test_key"})
     @patch('audit_iq_echo_rag.tool.SearchClient')
     def test_client_initialization_error(self, mock_search_client):
         """Test handling of client initialization errors."""
@@ -79,7 +79,7 @@ class TestAuditIqEchoRag(unittest.TestCase):
         
         self.assertIn("Error initializing Azure Search client", result)
     
-    @patch.dict(os.environ, {"AzureSearchEnpoint": "https://test.search.windows.net", "AzureSearchAdminKey": "test_key"})
+    @patch.dict(os.environ, {"AzureSearchEndpoint": "https://test.search.windows.net", "AzureSearchAdminKey": "test_key"})
     @patch('audit_iq_echo_rag.tool.SearchClient')
     def test_search_error(self, mock_search_client):
         """Test handling of search errors."""

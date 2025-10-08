@@ -83,10 +83,10 @@ def crewai_agent_example():
 
 if __name__ == "__main__":
     # Check if Azure Search credentials are configured
-    if not os.getenv("AzureSearchEnpoint") or not os.getenv("AzureSearchAdminKey"):
+    if not os.getenv("AzureSearchEndpoint") or not os.getenv("AzureSearchAdminKey"):
         print("❌ Azure Search credentials not found in environment variables.")
         print("Please set your Azure Search credentials in the .env file.")
-        print("Required: AzureSearchEnpoint and AzureSearchAdminKey")
+        print("Required: AzureSearchEndpoint and AzureSearchAdminKey")
         exit(1)
     
     print("🔍 AuditIQ ECHO RAG Tool Examples")
