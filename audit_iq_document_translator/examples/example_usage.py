@@ -13,16 +13,24 @@ from audit_iq_document_translator import AuditIqDocumentTranslator
 
 def setup_environment():
     """
-    Setup environment variables for Azure Document Translation.
+    Setup environment variables for Azure Document Translation and Blob Storage.
     
     Note: In a real application, these should be set in your environment
     or loaded from a secure configuration file, not hardcoded.
     """
-    # These are example values - replace with your actual Azure credentials
+    # Azure Document Translation credentials
     os.environ["AZURE_DOCUMENT_TRANSLATION_ENDPOINT"] = "https://your-service.cognitiveservices.azure.com/"
     os.environ["AZURE_DOCUMENT_TRANSLATION_KEY"] = "your-document-translation-api-key"
     
-    # Optional: Set custom Documents folder path
+    # Azure Blob Storage credentials (choose one method)
+    # Method 1: Connection string (recommended)
+    os.environ["AZURE_STORAGE_CONNECTION_STRING"] = "DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net"
+    
+    # Method 2: Account name and key (alternative)
+    # os.environ["AZURE_STORAGE_ACCOUNT_NAME"] = "your-storage-account"
+    # os.environ["AZURE_STORAGE_ACCOUNT_KEY"] = "your-storage-key"
+    
+    # Optional: Set custom Documents folder path for local files
     # os.environ["DOCUMENTS_FOLDER_PATH"] = "/path/to/your/documents"
 
 
@@ -271,6 +279,155 @@ def main():
     except Exception as e:
         print(f"Error running examples: {e}")
         print("Make sure you have set up your Azure Document Translation credentials.")
+    
+    print("Examples completed!")
+
+
+def example_blob_storage_url():
+    """
+    Example 9: Translation using blob storage URL
+    """
+    print("=== Example 9: Blob Storage URL Translation ===")
+    
+    translator = AuditIqDocumentTranslator()
+    
+    # Translate a document from blob storage using full URL
+    result = translator._run(
+        file_path="https://youraccount.blob.core.windows.net/documents/audit_report.pdf",
+        target_language="spanish"
+    )
+    
+    print("Result:", result)
+    print()
+
+
+def example_blob_storage_path():
+    """
+    Example 10: Translation using blob storage path notation
+    """
+    print("=== Example 10: Blob Storage Path Translation ===")
+    
+    translator = AuditIqDocumentTranslator()
+    
+    # Translate using container/blob notation
+    result = translator._run(
+        file_path="documents/compliance_report.docx",
+        target_language="french",
+        output_file_path="translated/rapport_conformite_fr.docx"
+    )
+    
+    print("Result:", result)
+    print()
+
+
+def example_blob_filename_search():
+    """
+    Example 11: Translation using filename search in blob storage
+    """
+    print("=== Example 11: Blob Storage Filename Search ===")
+    
+    translator = AuditIqDocumentTranslator()
+    
+    # Search for file by name across blob containers
+    result = translator._run(
+        file_path="financial_statement.pdf",
+        target_language="german",
+        use_blob_storage=True  # Force blob storage mode
+    )
+    
+    print("Result:", result)
+    print()
+
+
+def example_mixed_storage():
+    """
+    Example 12: Mixed storage - blob input, local output
+    """
+    print("=== Example 12: Mixed Storage Translation ===")
+    
+    translator = AuditIqDocumentTranslator()
+    
+    # Read from blob storage, save to local file
+    result = translator._run(
+        file_path="documents/contract.pdf",
+        target_language="italian",
+        output_file_path="/local/path/contratto_italiano.pdf"
+    )
+    
+    print("Result:", result)
+    print()
+
+
+def example_blob_batch_translation():
+    """
+    Example 13: Batch translation with blob storage
+    """
+    print("=== Example 13: Blob Storage Batch Translation ===")
+    
+    translator = AuditIqDocumentTranslator()
+    
+    # List of documents in blob storage to translate
+    blob_documents = [
+        "documents/policy_2024.pdf",
+        "documents/procedures.docx",
+        "reports/annual_audit.pdf"
+    ]
+    
+    target_languages = ["spanish", "french", "german"]
+    
+    for document in blob_documents:
+        for language in target_languages:
+            print(f"Translating {document} to {language}...")
+            result = translator._run(
+                file_path=document,
+                target_language=language
+            )
+            
+            if "successfully translated" in result.lower():
+                print(f"✅ {document} → {language} completed")
+            else:
+                print(f"❌ {document} → {language} failed: {result}")
+        print()
+
+
+def main():
+    """
+    Main function to run all examples
+    """
+    print("AuditIQ Document Translator Tool - Usage Examples")
+    print("=" * 50)
+    
+    # Setup environment (you would do this once in your application)
+    setup_environment()
+    
+    # Run examples
+    try:
+        # Local file examples
+        example_simple_translation()
+        example_language_variations()
+        example_full_path_translation()
+        example_custom_output_path()
+        example_batch_translation()
+        example_error_handling()
+        example_multilingual_translation()
+        
+        # Blob storage examples
+        print("\n" + "=" * 50)
+        print("AZURE BLOB STORAGE EXAMPLES")
+        print("=" * 50)
+        
+        example_blob_storage_url()
+        example_blob_storage_path()
+        example_blob_filename_search()
+        example_mixed_storage()
+        example_blob_batch_translation()
+        
+        # CrewAI integration
+        example_crewai_integration()
+        
+    except Exception as e:
+        print(f"Error running examples: {e}")
+        print("Make sure you have set up your Azure credentials properly.")
     
     print("Examples completed!")
 
