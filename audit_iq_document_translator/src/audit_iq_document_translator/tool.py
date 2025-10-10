@@ -19,7 +19,7 @@ class DocumentTranslationInput(BaseModel):
     target_language: str = Field(..., description="Target language code (e.g., 'es' for Spanish, 'fr' for French) or language name (e.g., 'spanish', 'french')")
     source_language: str = Field(default="auto", description="Source language code or 'auto' for automatic detection")
     output_file_path: str = Field(default="", description="Output path for translated document: local path, blob URL, or blob path (optional, defaults to input location with language suffix)")
-    use_blob_storage: bool = Field(default=True, description="Force use of Azure Blob Storage for file operations (auto-detected from path if not specified)")
+    use_blob_storage: bool = Field(default=True, description="Force use of Azure Blob Storage for file operations (always enabled)")
 
 
 class CrossPlatformDocumentsHelper:

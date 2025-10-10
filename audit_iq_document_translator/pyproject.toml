@@ -1,6 +1,6 @@
 [project]
 name = "audit_iq_document_translator"
-version = "1.0.2"
+version = "1.0.3"
 description = "AuditIQ Document Translator Tool - Multi-language document translation using Azure AI Document Translation"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"

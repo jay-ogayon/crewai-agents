@@ -6,5 +6,5 @@ A CrewAI tool for translating documents while preserving formatting using Azure 
 
 from .tool import AuditIqDocumentTranslator
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __all__ = ["AuditIqDocumentTranslator"]
