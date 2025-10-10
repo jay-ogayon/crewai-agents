@@ -575,7 +575,7 @@ class AuditIqDocumentTranslator(BaseTool):
         
         return content_type
 
-    def _run(self, file_path: str, target_language: str, source_language: str = "auto", output_file_path: str = "", use_blob_storage: bool = False) -> str:
+    def _run(self, file_path: str, target_language: str, source_language: str = "auto", output_file_path: str = "", use_blob_storage: bool = True) -> str:
         try:
             # Determine if we should use blob storage
             use_blob = use_blob_storage or self.blob_helper.is_blob_path(file_path)
