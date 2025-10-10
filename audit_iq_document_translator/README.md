@@ -26,6 +26,19 @@ A standalone CrewAI tool for translating documents while preserving formatting u
 - Azure Document Translation service account
 - Azure Storage account (optional, for blob storage features)
 
+### CrewAI Tool Registry (Recommended)
+
+The tool is published in the CrewAI tool registry and can be easily installed:
+
+```bash
+crewai tool install audit-iq-document-translator
+```
+
+You can also find it in the CrewAI marketplace:
+https://app.crewai.com/crewai_plus/tools/audit-iq-document-translator
+
+### Manual Installation
+
 ### Quick Setup (Recommended)
 
 ```bash
